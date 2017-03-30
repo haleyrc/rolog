@@ -27,7 +27,10 @@ type Rolog struct {
 
 func (r *Rolog) Write(p []byte) (int, error) {
 	r.mu.Lock()
-	defer r.mu.Unlock()
+	defer func() {
+		r.f.Sync()
+		r.mu.Unlock()
+	}()
 
 	return fmt.Fprintf(r.f, string(p))
 }
