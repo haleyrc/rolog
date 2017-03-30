@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	ArchiveFileFormat = "invsvc-2006-01-02-150405.log"
-	CurrentFilename   = "invsvc.log"
+	ArchiveFileFormat = "%s-2006-01-02-150405.log"
+	CurrentFilename   = "%s.log"
 )
 
 type Rolog struct {
@@ -23,6 +23,7 @@ type Rolog struct {
 	path     string
 	done     chan int
 	err      chan error
+	name     string
 }
 
 func (r *Rolog) Write(p []byte) (int, error) {
@@ -38,7 +39,7 @@ func (r *Rolog) Write(p []byte) (int, error) {
 func (r *Rolog) Rotate() error {
 	var (
 		err     error
-		newPath = filepath.Join(filepath.Dir(r.path), fname())
+		newPath = filepath.Join(filepath.Dir(r.path), r.fname())
 	)
 
 	r.mu.Lock()
@@ -58,8 +59,8 @@ func (r *Rolog) Rotate() error {
 	return nil
 }
 
-func fname() string {
-	return time.Now().Format(ArchiveFileFormat)
+func (r *Rolog) fname() string {
+	return fmt.Sprintf(time.Now().Format(ArchiveFileFormat), r.name)
 }
 
 func (r *Rolog) Close() error {
@@ -73,15 +74,17 @@ func (r *Rolog) Close() error {
 	return r.f.Close()
 }
 
-func New(dir string, interval time.Duration) (*Rolog, error) {
+func New(dir, name string, interval time.Duration) (*Rolog, error) {
 	var (
 		file = filepath.Join(dir, CurrentFilename)
 		r    = &Rolog{}
 		err  error
 	)
 
+	r.name = name
+
 	if _, err = os.Stat(file); err == nil {
-		if err = os.Rename(file, fname()); err != nil {
+		if err = os.Rename(file, r.fname()); err != nil {
 			return nil, errors.Wrap(err, "could not archive existing log")
 		}
 	}
@@ -101,8 +104,8 @@ func New(dir string, interval time.Duration) (*Rolog, error) {
 	return r, nil
 }
 
-func StartNew(dir string, interval time.Duration) (*Rolog, error) {
-	r, err := New(dir, interval)
+func StartNew(dir, name string, interval time.Duration) (*Rolog, error) {
+	r, err := New(dir, name, interval)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not start log rotator")
 	}
@@ -113,19 +116,21 @@ func StartNew(dir string, interval time.Duration) (*Rolog, error) {
 }
 
 func (r *Rolog) Run() {
-	go func() {
-		ticker := time.NewTicker(r.interval)
-		for {
-			select {
-			case <-ticker.C:
-				if err := r.Rotate(); err != nil {
-					r.err <- err
-					r.done <- 1
-				}
-			case <-r.done:
-				return
-			default:
+	go r.run()
+}
+
+func (r *Rolog) run() {
+	ticker := time.NewTicker(r.interval)
+	for {
+		select {
+		case <-ticker.C:
+			if err := r.Rotate(); err != nil {
+				r.err <- err
+				r.done <- 1
 			}
+		case <-r.done:
+			return
+		default:
 		}
-	}()
+	}
 }

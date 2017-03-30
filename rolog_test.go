@@ -14,10 +14,11 @@ func TestFnameCreatesNames(t *testing.T) {
 	year, month, day := now.Date()
 	hour, min, sec := now.Clock()
 
-	want := fmt.Sprintf("invsvc-%d-%0.2d-%0.2d-%0.2d%0.2d%0.2d.log", year, month, day, hour, min, sec)
+	want := fmt.Sprintf("test-%d-%0.2d-%0.2d-%0.2d%0.2d%0.2d.log", year, month, day, hour, min, sec)
 	fmt.Printf("Looking for: %s\n", want)
 
-	got := fname()
+	r := &Rolog{name: "test"}
+	got := r.fname()
 
 	if want != got {
 		t.Errorf("Wanted %s, got %s", want, got)
@@ -37,7 +38,12 @@ func TestNewCreatesARolog(t *testing.T) {
 		t.FailNow()
 	}
 
-	r := New(dir, want.interval)
+	r, err := New(dir, "test", want.interval)
+	if err != nil {
+		t.Errorf("unexpected error: %q", err)
+		t.FailNow()
+	}
+
 	defer func() {
 		r.Close()
 		if err := os.RemoveAll(dir); err != nil {
@@ -57,7 +63,12 @@ func TestRotateCreatesArchiveAndOpensNew(t *testing.T) {
 		t.FailNow()
 	}
 
-	r := New(dir, 5*time.Second)
+	r, err := New(dir, "test", 5*time.Second)
+	if err != nil {
+		t.Errorf("unexpected error: %q", err)
+		t.FailNow()
+	}
+
 	defer func() {
 		r.Close()
 		if err := os.RemoveAll(dir); err != nil {
@@ -110,7 +121,12 @@ func TestRunCreatesFilesOnTime(t *testing.T) {
 		t.FailNow()
 	}
 
-	r := New(dir, 5*time.Second)
+	r, err := New(dir, "test", 5*time.Second)
+	if err != nil {
+		t.Errorf("unexpected error: %q", err)
+		t.FailNow()
+	}
+
 	defer func() {
 		r.Close()
 		if err := os.RemoveAll(dir); err != nil {
