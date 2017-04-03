@@ -76,7 +76,7 @@ func (r *Rolog) Close() error {
 
 func New(dir, name string, interval time.Duration) (*Rolog, error) {
 	var (
-		file = filepath.Join(dir, CurrentFilename)
+		file = filepath.Join(dir, fmt.Sprintf(CurrentFilename, name))
 		r    = &Rolog{}
 		err  error
 	)
