@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -53,6 +54,33 @@ func TestNewCreatesARolog(t *testing.T) {
 
 	if r.interval != want.interval {
 		t.Errorf("Wanted interval %s, got %s", want.interval, r.interval)
+	}
+}
+
+func TestNewCreatesCorrectCurrentFile(t *testing.T) {
+	dir, err := ioutil.TempDir(".", "tmp")
+	if err != nil {
+		t.Errorf("unexpected error: %q", err)
+		t.FailNow()
+	}
+
+	r, err := New(dir, "test", 60*time.Minute)
+	if err != nil {
+		t.Errorf("unexpected error: %q", err)
+		t.FailNow()
+	}
+	r.Close()
+
+	defer func() {
+		if err := os.RemoveAll(dir); err != nil {
+			t.Errorf("could not cleanup temp files: %q", err)
+		}
+	}()
+
+	_, err = os.Stat(filepath.Join(dir, "test.log"))
+	if err != nil {
+		t.Errorf("unexpected error: %q", err)
+		t.FailNow()
 	}
 }
 
