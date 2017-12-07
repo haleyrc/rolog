@@ -163,6 +163,7 @@ func (r *Rolog) run() {
 		case <-r.done:
 			return
 		default:
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
 }
