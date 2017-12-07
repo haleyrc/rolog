@@ -41,6 +41,8 @@ func (r *Rolog) Rotate() error {
 		err     error
 		newPath = filepath.Join(filepath.Dir(r.path), r.fname())
 	)
+	fmt.Printf("path=%s\n", r.path)
+	fmt.Printf("newpath=%s\n", newPath)
 
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -84,7 +86,7 @@ func New(dir, name string, interval time.Duration) (*Rolog, error) {
 	r.name = name
 
 	if _, err = os.Stat(file); err == nil {
-		if err = os.Rename(file, r.fname()); err != nil {
+		if err = os.Rename(file, filepath.Join(dir, r.fname())); err != nil {
 			return nil, errors.Wrap(err, "could not archive existing log")
 		}
 	}

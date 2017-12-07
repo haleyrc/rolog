@@ -64,6 +64,13 @@ func TestNewCreatesCorrectCurrentFile(t *testing.T) {
 		t.FailNow()
 	}
 
+	f, err := os.Create(filepath.Join(dir, "test.log"))
+	if err != nil {
+		t.Errorf("unexpected error: %q", err)
+		t.FailNow()
+	}
+	f.Close()
+
 	r, err := New(dir, "test", 60*time.Minute)
 	if err != nil {
 		t.Errorf("unexpected error: %q", err)
@@ -80,6 +87,17 @@ func TestNewCreatesCorrectCurrentFile(t *testing.T) {
 	_, err = os.Stat(filepath.Join(dir, "test.log"))
 	if err != nil {
 		t.Errorf("unexpected error: %q", err)
+		t.FailNow()
+	}
+
+	matches, err := filepath.Glob(filepath.Join(dir, "*.log"))
+	if err != nil {
+		t.Errorf("unexpected error: %q", err)
+		t.FailNow()
+	}
+
+	if len(matches) < 2 {
+		t.Errorf("expected two files, found %d\n", len(matches))
 		t.FailNow()
 	}
 }
